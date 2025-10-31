@@ -1,9 +1,9 @@
 # Martian-translator
-Group name: 
+<b>Group name:<b>
 Martian Incorporated
-Names of members: 
+<b>Names of members:<b>
 Melody Pajoohi, Sushil Dahal, Rijan Bhattarai, Brayden Gullion, Aaron Villareal
-Idea:
+<b>Idea:<b>
 Martian (Alien) Translator
 
 Pitch:
