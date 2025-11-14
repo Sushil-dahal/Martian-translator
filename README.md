@@ -10,7 +10,7 @@ Have you ever thought about how we would communicate with other species? How wou
 ## Team Members:
 - Melody Pajoohi - Role/What you are working on - GitHiib: @username
 - Sushil Dahal - Role/What you are working on - GitHiib: @username
-- Brayden Gullion - Role/What you are working on - GitHiib: @username
+- Brayden Gullion - Role/What you are working on - GitHiib: @BlueOctober121
 - Rijan Bhattarai - Role/What you are working on - GitHiib: @username
 - Aaron Villarreal - Role/What you are working on - GitHiib: @av12-un
 
