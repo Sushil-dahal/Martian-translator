@@ -16,14 +16,15 @@ Have you ever thought about how we would communicate with other species? How wou
 
 ## Setup Instructions 
 How to run project locally:
-1. Step One
-2. Step Two
-3. etc.
+1. Pull changes that have occurs.
+2. To make changes create a branch.
+3. In the branch make the changes you want and save.
+4. Create a pull review so team members can review and merge the code if it is acceptable.
+5. For review you can pull changes from branches locally and run the code to make sure it works before it merges with main.
 
 ## Technologies Used
-- Language/Framework
-- Libraries
-- Tools
+- TypeScript
+
 
 ## Project Structure
 Brief explanation of main folders/files
