@@ -1,6 +1,6 @@
   
 # Project Name: 
-Martain (Alien) - translator
+Martain (Alien) - translator.
 # Group Name: 
 Martian Incorporated
 
