@@ -150,3 +150,163 @@ export default function SpaceDefenseGame() {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+
+    // Craters (Detail)
+    ctx.fillStyle = '#27272a'; // Zinc-800
+    ctx.beginPath();
+    ctx.arc(asteroid.size / 4, -asteroid.size / 4, asteroid.size / 5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Alien Letter
+    ctx.fillStyle = '#ff4d00'; // Orange
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(asteroid.letter, 0, 0);
+    
+    ctx.restore();
+  };
+
+  // Draw laser
+  const drawLaser = (ctx: CanvasRenderingContext2D, laser: Laser) => {
+    // Laser Core
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(laser.x - 2, laser.y - 25, 4, 25);
+    
+    // Laser Glow (Outer)
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = '#d946ef'; // Fuchsia glow
+    ctx.fillStyle = '#d946ef';
+    ctx.fillRect(laser.x - 4, laser.y - 25, 8, 25);
+    ctx.shadowBlur = 0;
+  };
+
+  // Spawn asteroid
+  const spawnAsteroid = () => {
+    const asteroid: Asteroid = {
+      id: nextAsteroidId.current++,
+      x: Math.random() * (CANVAS_WIDTH - 60) + 30,
+      y: -50,
+      size: 20 + Math.random() * 25,
+      speed: 1.5 + Math.random() * 2 + (score * 0.01), // Decreased speed (was 2 + 3)
+      rotation: 0,
+      letter: ALIEN_LETTERS[Math.floor(Math.random() * ALIEN_LETTERS.length)] // Random alien letter
+    };
+    asteroidsRef.current.push(asteroid);
+  };
+
+  // Shoot laser
+  const shootLaser = () => {
+    const laser: Laser = {
+      id: nextLaserId.current++,
+      x: playerRef.current.x,
+      y: playerRef.current.y - PLAYER_SIZE / 2
+    };
+    lasersRef.current.push(laser);
+  };
+
+  // Check collision between laser and asteroid
+  const checkCollision = (laser: Laser, asteroid: Asteroid): boolean => {
+    const dx = laser.x - asteroid.x;
+    const dy = laser.y - asteroid.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return distance < asteroid.size + 5;
+  };
+
+  // Check collision between player and asteroid
+  const checkPlayerCollision = (asteroid: Asteroid): boolean => {
+    const dx = playerRef.current.x - asteroid.x;
+    const dy = playerRef.current.y - asteroid.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    return distance < (asteroid.size + PLAYER_SIZE / 2.5);
+  };
+
+  // Game loop
+  const gameLoop = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || isGameOver) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Update player position
+    if (keysRef.current['ArrowLeft'] && playerRef.current.x > PLAYER_SIZE) {
+      playerRef.current.x -= PLAYER_SPEED;
+    }
+    if (keysRef.current['ArrowRight'] && playerRef.current.x < CANVAS_WIDTH - PLAYER_SIZE) {
+      playerRef.current.x += PLAYER_SPEED;
+    }
+
+    // Spawn asteroids
+    const currentSpawnRate = Math.max(200, ASTEROID_SPAWN_INTERVAL - (score * 2)); // Spawn faster as score goes up
+    if (Date.now() - lastAsteroidSpawn.current > currentSpawnRate) {
+      spawnAsteroid();
+      lastAsteroidSpawn.current = Date.now();
+    }
+
+    // Update asteroids
+    asteroidsRef.current = asteroidsRef.current.filter(asteroid => {
+      asteroid.y += asteroid.speed;
+      asteroid.rotation += 0.02;
+      
+      // Check collision with player
+      if (checkPlayerCollision(asteroid)) {
+        setIsGameOver(true);
+        return false;
+      }
+      
+      return asteroid.y < CANVAS_HEIGHT + 100;
+    });
+
+    // Update lasers and check collisions
+    lasersRef.current = lasersRef.current.filter(laser => {
+      laser.y -= LASER_SPEED;
+      
+      let hit = false;
+      asteroidsRef.current = asteroidsRef.current.filter(asteroid => {
+        if (checkCollision(laser, asteroid)) {
+          hit = true;
+          setScore(prev => prev + 100);
+          return false; // Remove asteroid
+        }
+        return true;
+      });
+      
+      return !hit && laser.y > -50;
+    });
+
+    // Draw everything
+    asteroidsRef.current.forEach(asteroid => drawAsteroid(ctx, asteroid));
+    lasersRef.current.forEach(laser => drawLaser(ctx, laser));
+    drawPlayer(ctx);
+
+    animationRef.current = requestAnimationFrame(gameLoop);
+  }, [isGameOver, score]);
+
+  // Keyboard controls
+  useEffect(() => {
+    if (!gameStarted) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      keysRef.current[e.key] = true;
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        shootLaser();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keysRef.current[e.key] = false;
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [gameStarted]);
+
