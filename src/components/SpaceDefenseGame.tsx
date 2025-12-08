@@ -310,3 +310,162 @@ export default function SpaceDefenseGame() {
     };
   }, [gameStarted]);
 
+  // Touch controls for mobile
+  useEffect(() => {
+    if (!gameStarted) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const touchX = touch.clientX - rect.left;
+      const scaledX = (touchX / rect.width) * CANVAS_WIDTH;
+      
+      if (scaledX < CANVAS_WIDTH / 3) {
+        keysRef.current['ArrowLeft'] = true;
+      } else if (scaledX > (2 * CANVAS_WIDTH) / 3) {
+        keysRef.current['ArrowRight'] = true;
+      } else {
+        shootLaser();
+      }
+    };
+
+    const handleTouchEnd = () => {
+      keysRef.current['ArrowLeft'] = false;
+      keysRef.current['ArrowRight'] = false;
+    };
+
+    canvas.addEventListener('touchstart', handleTouchStart);
+    canvas.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [gameStarted]);
+
+  // Start game loop
+  useEffect(() => {
+    if (gameStarted && !isGameOver) {
+      animationRef.current = requestAnimationFrame(gameLoop);
+    }
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [gameStarted, isGameOver, gameLoop]);
+
+  const handleStart = () => {
+    setIsGameActive(true);
+    initGame();
+  };
+
+  const handleClose = () => {
+    setIsGameActive(false);
+    setGameStarted(false);
+    setIsGameOver(false);
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+  };
+
+  const handleRestart = () => {
+    initGame();
+  };
+
+  return (
+    <>
+      {/* Trigger Button - Bottom Right */}
+      {!isGameActive && (
+        <button
+          onClick={handleStart}
+          className="fixed bottom-6 right-6 z-50 group"
+          aria-label="Launch Space Defense Game"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-cyan-500 rounded-full blur-xl opacity-50 group-hover:opacity-75 animate-pulse" />
+            <div className="relative bg-gradient-to-br from-purple-600 to-cyan-500 p-4 rounded-full shadow-lg hover:scale-110 transition-transform duration-300 border-2 border-white/20">
+              <Rocket className="w-8 h-8 text-white animate-bounce" />
+            </div>
+          </div>
+        </button>
+      )}
+
+      {/* Game Modal */}
+      {isGameActive && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-4xl mx-4">
+            
+            {/* Close Button */}
+            <button
+              onClick={handleClose}
+              className="absolute -top-12 right-0 md:-right-12 bg-red-500/80 hover:bg-red-600 p-2 rounded-full shadow-lg transition-colors z-20 border border-red-400"
+              aria-label="Close game"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+
+            {/* Score Display */}
+            <div className="absolute top-6 left-6 z-20 bg-black/60 backdrop-blur-sm px-6 py-2 rounded-full border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.5)]">
+              <div className="text-cyan-400 font-mono text-xl tracking-wider font-bold">
+                SCORE: <span className="text-white">{score.toString().padStart(6, '0')}</span>
+              </div>
+            </div>
+
+            {/* Game Canvas Container */}
+            <div className="relative bg-[#09090b] rounded-2xl border-2 border-cyan-500/30 shadow-[0_0_50px_rgba(139,92,246,0.3)] overflow-hidden">
+              
+              {/* Starfield Background Effect (CSS) */}
+              <div className="absolute inset-0 opacity-30 pointer-events-none">
+                 <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#000] to-black"></div>
+              </div>
+
+              <canvas
+                ref={canvasRef}
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+                className="w-full h-auto block relative z-10"
+                style={{ maxHeight: '80vh', cursor: 'none' }}
+              />
+
+              {/* Game Over Overlay */}
+              {isGameOver && (
+                <div className="absolute inset-0 z-30 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in zoom-in duration-300">
+                  <div className="text-center space-y-6 p-8 border border-red-500/30 rounded-2xl bg-black/60 shadow-[0_0_30px_rgba(239,68,68,0.4)]">
+                    <h2 className="text-red-500 text-6xl font-black tracking-tighter drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+                      MISSION FAILED
+                    </h2>
+                    <div className="text-cyan-300 text-2xl font-mono">
+                      FINAL SCORE: <span className="text-white font-bold">{score}</span>
+                    </div>
+                    <button
+                      onClick={handleRestart}
+                      className="mt-4 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 px-10 py-4 rounded-xl text-white font-bold text-lg tracking-wide transition-all transform hover:scale-105 shadow-xl border border-white/10"
+                    >
+                      RELAUNCH SHIP
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Controls Info */}
+              {!isGameOver && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-sm px-6 py-2 rounded-full border border-white/10 text-center z-20 pointer-events-none">
+                  <p className="text-sm text-cyan-200/80 font-mono">
+                    <span className="hidden md:inline">← → MOVE | SPACE TO FIRE</span>
+                    <span className="md:hidden">TAP SIDES TO MOVE | TAP CENTER TO FIRE</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
